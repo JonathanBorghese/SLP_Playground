@@ -1,2 +1,2 @@
 # SLP_Playground
-Single Layer Perceptron Programmed in python
+Single Layer Perceptron in python
