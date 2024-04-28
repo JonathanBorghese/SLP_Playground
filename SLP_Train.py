@@ -5,10 +5,8 @@ import math
 class LogisticRegression:
 
     """ Forward Propagation """
-    def forward_prop(self, x):
-        if self.w is not None:
-            return self.activation(np.matmul(x, self.w))
-        return 0
+    def forward_prop(self, x, w):
+        return self.activation(np.matmul(x, w))
     
     """ sigmoid activation function"""
     def activation(self, x):
@@ -16,33 +14,23 @@ class LogisticRegression:
     
     """ MSE loss function (guess & label are np.arrays)"""
     def MSE_loss(self, guess, label):
-        return np.mean(.5 * ((guess - label) ** 2))
-    
-    """ cross entropy loss function 
-        (broken atm)"""
-    def loss(self, y_hat, y):
-        sum = 0.0
-        for i in range(len(y)):
-            y1 = y_hat[i]
-            y2 = y[i]
-            sum += -(y2*math.log(y1) + (1 - y2) * math.log(1 - y1))
-
-        return sum
+        return np.mean(.5 * ((guess - label) ** 2)) + np.sum(np.square(w))
 
     """ Returns the error rate, expressed as a percentage, of the given dataset """
-    def error_rate(self, features, labels):
+    def error_rate(self, features, labels, w):
 
         if len(features) != len(labels):
             print("invalid data")
             return
 
         errors = 0.0
-        y_hat = self.forward_prop(features)
+        y_hat = self.forward_prop(features, w)
 
         for i in range(len(labels)):
-            guess = 0 if y_hat[i] < .5 else 1
+            guess = round(y_hat[i])
             if guess != labels[i]:
                 errors += 1
+                print(y_hat[i], labels[i], i)
 
         return errors / len(labels)
 
@@ -54,27 +42,28 @@ class LogisticRegression:
         if len(features) != len(labels):
             print("invalid data")
             return
-
-        N = len(features)
+        
         d = len(features[0])
-        self.w = np.zeros(d, dtype=float)
+        w = np.zeros(d, dtype=float)
 
         for i in range(max_epochs):
 
             if not i % 10:
-                y = self.forward_prop(features)
+                y = self.forward_prop(features, w)
                 loss = self.MSE_loss(y, labels)
                 print("Epoch:", i, "\tLoss:", loss)
 
-            y_hat = self.forward_prop(features)
+            y_hat = self.forward_prop(features, w)
             gradient = np.subtract(y_hat, labels)
 
-            self.w -= learning_rate * (np.matmul(gradient, features))
+            w -= learning_rate * (np.matmul(gradient, features))
             
             """ Weight Constraints """
-            normal = np.linalg.norm(self.w)
+            normal = np.linalg.norm(w)
             if normal > max_weight_normal:
-                self.w *= max_weight_normal / normal
+                w *= max_weight_normal / normal
+        
+        return w
 
 
 
@@ -100,12 +89,12 @@ testing_features /= 255
 model = LogisticRegression()
 
 # Fit model for all 10 digits
-for d in range(3, 9):
-    new_testing_labels = np.array([int(x == d) for x in testing_labels], dtype=np.int_)
-    new_training_labels = np.array([int(x == d) for x in training_labels], dtype=np.int_)
+d=1
+new_testing_labels = np.array([int(x == d) for x in testing_labels], dtype=np.int_)
+new_training_labels = np.array([int(x == d) for x in training_labels], dtype=np.int_)
 
-    model.fit(training_features, new_training_labels, max_epochs=100, learning_rate=0.001)
-    print("Digit:", d, "\tErorr Rate:", model.error_rate(testing_features, new_testing_labels))
+weight = model.fit(training_features, new_training_labels, max_epochs=100, learning_rate=0.001)
+print("Digit:", d, "\tErorr Rate:", model.error_rate(testing_features, new_testing_labels, weight))
 
     # save weights to file
     #filename = "weights/w" + str(d) + "_normalized_weights.txt"
